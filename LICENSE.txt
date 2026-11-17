@@ -1,0 +1,17 @@
+CODEVAULT — ALL RIGHTS RESERVED
+
+Copyright (c) 2026, CodeVault author. All rights reserved.
+
+Unless the author gives prior written permission, no person or entity is granted
+any right to copy, modify, adapt, translate, create derivative works from, sell,
+resell, sublicense, redistribute, publish, or otherwise commercially exploit
+the source code or project files made available in this repository or website.
+
+Viewing a live demonstration does not grant a license to use, copy, modify,
+distribute, or commercially exploit the source code.
+
+The author retains all copyright and other intellectual property rights.
+For permission requests, contact the author through a channel designated by them.
+
+This notice does not override rights that cannot lawfully be restricted under
+applicable law. Third-party components remain subject to their own licenses.

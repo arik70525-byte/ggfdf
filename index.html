@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="CodeVault — коллекция HTML-проектов.">
+<title>CodeVault — коллекция проектов</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="noise"></div>
+<header class="topbar"><a class="brand" href="#"><span class="brand-icon">⌘</span> Code<span>Vault</span></a><nav><a href="#projects">Проекты</a><a href="#license">Лицензия</a></nav><button id="adminOpen" class="outline">Админ-панель ↗</button></header>
+<main>
+<section class="hero">
+ <div class="eyebrow"><i></i> DIGITAL PROJECT LIBRARY</div>
+ <h1>Мои проекты.<br><span>Мой код.</span> Мои правила.</h1>
+ <p class="lead">Коллекция веб-проектов, экспериментов и готовых решений. Изучай демо, знакомься с работами и соблюдай лицензию автора.</p>
+ <div class="hero-actions"><a class="primary" href="#projects">Смотреть проекты <b>↓</b></a><a class="textlink" href="#license">Условия использования ↗</a></div>
+ <div class="hero-meta"><span><b id="projectCount">0</b> опубликованных проектов</span><span>HTML · CSS · JavaScript</span><span>© CodeVault</span></div>
+ <div class="orb orb1"></div><div class="orb orb2"></div>
+</section>
+<section id="projects" class="projects section">
+ <div class="section-head"><div><div class="eyebrow">01 / КОЛЛЕКЦИЯ</div><h2>Проекты <span>в архиве</span></h2></div><div class="search-wrap">⌕ <input id="search" placeholder="Найти проект..."></div></div>
+ <div id="projectGrid" class="grid"><div class="empty"><div class="empty-icon">◇</div><h3>Пока здесь тихо</h3><p>Проекты появятся после первой публикации через админ-панель.</p></div></div>
+</section>
+<section id="license" class="license section"><div class="license-mark">§</div><div><div class="eyebrow">02 / ПРАВИЛА</div><h2>Лицензия <span>CodeVault</span></h2><p>Все размещённые здесь проекты и исходный код принадлежат их автору, если не указано иное.</p><div class="rules"><div><b>01</b><span><strong>Нельзя изменять</strong><small>Запрещено изменять, адаптировать или создавать производные версии кода без письменного разрешения автора.</small></span></div><div><b>02</b><span><strong>Нельзя продавать</strong><small>Запрещена продажа, перепродажа и коммерческое распространение кода или его частей без согласия автора.</small></span></div><div><b>03</b><span><strong>Нельзя присваивать</strong><small>Нельзя выдавать проекты или их части за собственную работу.</small></span></div><div><b>04</b><span><strong>Нельзя распространять</strong><small>Нельзя публиковать исходники и копии без письменного разрешения правообладателя.</small></span></div></div><p class="legal-note">Просмотр демонстраций не означает передачу прав или предоставление лицензии на использование исходного кода. Для получения разрешения свяжитесь с автором.</p></div></section>
+</main>
+<footer><a class="brand" href="#"><span class="brand-icon">⌘</span> Code<span>Vault</span></a><span>Собрано с вниманием к деталям.</span><span>© <span id="year"></span> CodeVault</span></footer>
+<div id="adminModal" class="modal hidden"><div class="modal-card"><button class="close" id="closeModal">×</button><div class="eyebrow">PRIVATE ACCESS / ADMIN</div><h2>Управление <span>проектами</span></h2><p class="muted">Подключи репозиторий GitHub и токен с правом Contents: Read and write. Токен хранится только в памяти вкладки.</p>
+<div class="field"><label>GitHub username / organization</label><input id="owner" placeholder="например, myusername"></div>
+<div class="field"><label>Имя репозитория</label><input id="repo" placeholder="codevault"></div>
+<div class="field"><label>Ветка</label><input id="branch" value="main"></div>
+<div class="field"><label>Fine-grained Personal Access Token</label><input id="token" type="password" placeholder="github_pat_..." autocomplete="off"></div>
+<div class="notice">Не вставляй токен в публичные чаты и не сохраняй его в исходниках. Для безопасности создай отдельный токен только для этого репозитория.</div>
+<button id="connect" class="primary full">Подключить GitHub</button>
+<div id="uploadArea" class="upload-area hidden"><div class="divider"></div><h3>Добавить проект</h3><div class="field"><label>Название проекта</label><input id="projectName" placeholder="Мой первый сайт"></div><div class="field"><label>Краткое описание</label><textarea id="projectDesc" placeholder="Что делает проект?"></textarea></div><div class="field"><label>Файл проекта (.html или .zip)</label><input id="projectFile" type="file" accept=".html,.htm,.zip"></div><button id="publish" class="primary full">Опубликовать проект ↑</button><p id="status" class="status"></p><p class="tiny">Публикация загружает файл и обновляет projects.json в GitHub. После сборки GitHub Pages изменения появятся на сайте.</p></div>
+</div></div>
+<script src="app.js"></script>
+</body></html>
