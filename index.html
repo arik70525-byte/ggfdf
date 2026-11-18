@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#090d18"><meta name="description" content="CodeVault — рабочее пространство для веб-разработки.">
 <title>CodeVault — Developer Workspace</title>
-<link rel="icon" type="image/svg+xml" href="assets/codevault-icon.svg">
+<link rel="icon" type="image/svg+xml" href="codevault-icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
@@ -12,7 +12,7 @@
 <body>
 <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
 <header class="topbar">
-  <a class="brand" href="#home"><img src="assets/codevault-icon.svg" alt="" class="brand-icon"><span>Code<span class="brand-accent">Vault</span></span><span class="version-tag">STUDIO</span></a>
+  <a class="brand" href="#home"><img src="codevault-icon.svg" alt="" class="brand-icon"><span>Code<span class="brand-accent">Vault</span></span><span class="version-tag">STUDIO</span></a>
   <nav class="main-nav"><a class="nav-link active" href="#home">Обзор</a><a class="nav-link" href="#projects">Проекты</a><a class="nav-link" href="#compiler">Компилятор</a><a class="nav-link" href="#ai">AI Studio</a></nav>
   <div class="account-actions"><span id="userLabel" class="user-label"></span><button id="authOpen" class="btn btn-ghost">Войти</button><button id="adminOpen" class="btn btn-outline hidden">Админ-панель</button><button id="logout" class="btn btn-ghost hidden">Выйти</button></div>
 </header>
@@ -47,8 +47,11 @@
 </section>
 <section id="license" class="section shell license-section"><div class="license-card"><div class="license-mark">§</div><div><div class="eyebrow">04 / CREATOR RIGHTS</div><h2>Твой код — <span class="gradient-text">твои правила</span></h2><p>Права на опубликованные проекты остаются у их авторов. Условия использования определяются лицензией каждого проекта.</p></div></div></section>
 </main>
-<footer class="footer shell"><a class="brand" href="#home"><img src="assets/codevault-icon.svg" alt="" class="brand-icon"><span>Code<span class="brand-accent">Vault</span></span></a><span>Built for curious minds.</span><span>© <span id="year"></span> CodeVault Studio</span></footer>
+<footer class="footer shell"><a class="brand" href="#home"><img src="codevault-icon.svg" alt="" class="brand-icon"><span>Code<span class="brand-accent">Vault</span></span></a><span>Built for curious minds.</span><span>© <span id="year"></span> CodeVault Studio</span></footer>
 <div id="authModal" class="modal hidden"><div class="modal-card"><button class="close" id="closeAuth">×</button><div class="eyebrow">CODEVAULT ACCOUNT</div><h2 id="authTitle">Вход в аккаунт</h2><p class="muted">Создай аккаунт или войди по электронной почте.</p><div class="field"><label>EMAIL</label><input id="authEmail" type="email" placeholder="name@example.com" autocomplete="email"></div><div class="field"><label>ПАРОЛЬ</label><input id="authPassword" type="password" placeholder="Минимум 6 символов" autocomplete="current-password"></div><button id="authSubmit" class="btn btn-primary full">Войти</button><button id="authToggle" class="switch-auth">Нет аккаунта? Зарегистрироваться</button><p id="authStatus" class="status"></p></div></div>
 <div id="adminModal" class="modal hidden"><div class="modal-card admin-card"><button class="close" id="closeAdmin">×</button><div class="eyebrow">PRIVATE ACCESS / ADMIN</div><h2>Управление проектами</h2><p class="muted">Администратор: arik70525@gmail.com. Публикуй проект вставкой HTML-кода или файлом.</p><div class="field"><label>НАЗВАНИЕ ПРОЕКТА</label><input id="projectName" placeholder="Мой первый сайт"></div><div class="field"><label>КРАТКОЕ ОПИСАНИЕ</label><textarea id="projectDesc" placeholder="Что делает проект?"></textarea></div><div class="field"><label>HTML-КОД</label><textarea id="projectCode" class="code-input" spellcheck="false" placeholder="<!doctype html>..."></textarea></div><div class="field"><label>ИЛИ ФАЙЛ .HTML</label><input id="projectFile" type="file" accept=".html,.htm,text/html"></div><button id="publish" class="btn btn-primary full">Опубликовать проект ↑</button><p id="adminStatus" class="status"></p></div></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script><script src="config.js"></script><script src="app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script><script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script><script src="config.js"></script><script src="app.js"></script>
 </body></html>

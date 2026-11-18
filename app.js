@@ -1,26 +1,71 @@
 const $ = id => document.getElementById(id);
 const cfg = window.CODEVAULT_CONFIG || {};
 const ADMIN = String(cfg.ADMIN_EMAIL || 'arik70525@gmail.com').toLowerCase();
-let supabaseClient = null, currentUser = null, catalog = [], registering = false;
-const ready = cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY && !String(cfg.SUPABASE_URL).includes('ВСТАВЬ_') && window.supabase;
-if (ready) supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+let firebaseApp = null, firebaseAuth = null, db = null, storage = null;
+let currentUser = null, catalog = [], registering = false;
+const firebaseReady = !!(window.firebase && cfg.FIREBASE_CONFIG && cfg.FIREBASE_CONFIG.apiKey && cfg.FIREBASE_CONFIG.projectId);
+if (firebaseReady) {
+  firebaseApp = firebase.initializeApp(cfg.FIREBASE_CONFIG);
+  firebaseAuth = firebase.auth();
+  db = firebase.firestore();
+  storage = firebase.storage();
+}
 function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function setStatus(id,msg){$(id).textContent=msg;}
-function isAdmin(){return !!currentUser && String(currentUser.email||'').toLowerCase()===ADMIN;}
+function isAdmin(){return !!currentUser && currentUser.emailVerified===true && String(currentUser.email||'').toLowerCase()===ADMIN;}
 function render(){const q=$('search').value.toLowerCase();const shown=catalog.filter(p=>(p.name+' '+(p.description||'')).toLowerCase().includes(q));$('projectCount').textContent=catalog.length;$('projectGrid').innerHTML=shown.length?shown.map((p,i)=>`<article class="project-card"><div class="project-top"><span>PROJECT / ${String(i+1).padStart(3,'0')}</span><span>HTML</span></div><div class="file-icon">⌘</div><h3>${esc(p.name)}</h3><p>${esc(p.description||'Авторский веб-проект.')}</p><div class="project-actions"><a href="${esc(p.public_url)}" target="_blank" rel="noopener">Открыть демо ↗</a><a href="${esc(p.public_url)}" download>HTML ↓</a></div></article>`).join(''):`<div class="empty"><div class="empty-icon">◇</div><h3>${catalog.length?'Ничего не найдено':'Пока здесь тихо'}</h3><p>${catalog.length?'Попробуй изменить поисковый запрос.':'Проекты появятся после первой публикации через админ-панель.'}</p></div>`;}
-async function loadProjects(){if(!supabaseClient){$('projectGrid').innerHTML='<div class="empty"><h3>Нужно подключить базу данных</h3><p>Добавь настройки Supabase в config.js. Инструкция находится в README.</p></div>';return;}const {data,error}=await supabaseClient.from('projects').select('id,name,description,public_url,created_at').order('created_at',{ascending:false});if(error){console.error(error);$('projectGrid').innerHTML='<div class="empty"><h3>Не удалось загрузить проекты</h3><p>Проверь настройки Supabase и SQL-политики.</p></div>';return;}catalog=data||[];render();}
+async function loadProjects(){
+  if(!db){$('projectGrid').innerHTML='<div class="empty"><h3>Нужно подключить Firebase</h3><p>Добавь настройки Firebase в config.js и настрой Firestore и Storage по README.</p></div>';return;}
+  try{
+    const snap=await db.collection('projects').orderBy('createdAt','desc').get();
+    catalog=snap.docs.map(doc=>({id:doc.id,...doc.data()}));render();
+  }catch(error){console.error(error);$('projectGrid').innerHTML='<div class="empty"><h3>Не удалось загрузить проекты</h3><p>Проверь Firestore и правила доступа Firebase.</p></div>';}
+}
 function updateAccountUI(){const email=currentUser?.email||'';$('userLabel').textContent=email;$('authOpen').classList.toggle('hidden',!!currentUser);$('logout').classList.toggle('hidden',!currentUser);$('adminOpen').classList.toggle('hidden',!isAdmin());}
-async function refreshSession(){if(!supabaseClient){updateAccountUI();return;}const {data}=await supabaseClient.auth.getSession();currentUser=data.session?.user||null;updateAccountUI();}
+async function refreshSession(){if(!firebaseAuth){updateAccountUI();return;}currentUser=firebaseAuth.currentUser;updateAccountUI();}
 $('year').textContent=new Date().getFullYear();$('search').addEventListener('input',render);
-$('authOpen').onclick=()=>{$('authModal').classList.remove('hidden');setStatus('authStatus','');};$('closeAuth').onclick=()=>$('authModal').classList.add('hidden');$('closeAdmin').onclick=()=>$('adminModal').classList.add('hidden');
+$('authOpen').onclick=()=>{$('authModal').classList.remove('hidden');setStatus('authStatus','');};
+$('closeAuth').onclick=()=>$('authModal').classList.add('hidden');
+$('closeAdmin').onclick=()=>$('adminModal').classList.add('hidden');
 $('authToggle').onclick=()=>{registering=!registering;$('authTitle').innerHTML=registering?'Регистрация <span>аккаунта</span>':'Вход <span>в аккаунт</span>';$('authSubmit').textContent=registering?'Зарегистрироваться':'Войти';$('authToggle').textContent=registering?'Уже есть аккаунт? Войти':'Нет аккаунта? Зарегистрироваться';$('authPassword').autocomplete=registering?'new-password':'current-password';setStatus('authStatus','');};
-$('authSubmit').onclick=async()=>{if(!supabaseClient){setStatus('authStatus','Сначала настрой Supabase в config.js.');return;}const email=$('authEmail').value.trim().toLowerCase(),password=$('authPassword').value;if(!email||password.length<6){setStatus('authStatus','Введи email и пароль минимум из 6 символов.');return;}$('authSubmit').disabled=true;try{if(registering){const {data,error}=await supabaseClient.auth.signUp({email,password});if(error)throw error;setStatus('authStatus',data.session?'Аккаунт создан!':'Проверь почту и подтверди регистрацию.');}else{const {error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)throw error;$('authModal').classList.add('hidden');}}catch(e){setStatus('authStatus','Ошибка: '+e.message);}finally{$('authSubmit').disabled=false;}};
-$('logout').onclick=async()=>{await supabaseClient?.auth.signOut();currentUser=null;updateAccountUI();setStatus('adminStatus','');};
+$('authSubmit').onclick=async()=>{
+  if(!firebaseAuth){setStatus('authStatus','Сначала настрой Firebase в config.js.');return;}
+  const email=$('authEmail').value.trim().toLowerCase(),password=$('authPassword').value;
+  if(!email||password.length<6){setStatus('authStatus','Введи email и пароль минимум из 6 символов.');return;}
+  $('authSubmit').disabled=true;
+  try{
+    if(registering){const credential=await firebaseAuth.createUserWithEmailAndPassword(email,password);await credential.user.sendEmailVerification();setStatus('authStatus','Аккаунт создан. Подтверди email по ссылке из письма, затем войди.');}
+    else{const credential=await firebaseAuth.signInWithEmailAndPassword(email,password);if(email===ADMIN&&!credential.user.emailVerified){await credential.user.sendEmailVerification();setStatus('authStatus','Подтверди email по ссылке из письма, затем войди снова.');}else{$('authModal').classList.add('hidden');}}
+  }catch(e){setStatus('authStatus','Ошибка: '+e.message);}
+  finally{$('authSubmit').disabled=false;}
+};
+$('logout').onclick=async()=>{await firebaseAuth?.signOut();currentUser=null;updateAccountUI();setStatus('adminStatus','');};
 $('adminOpen').onclick=()=>{if(!isAdmin()){alert('Доступ разрешён только администратору.');return;}$('adminModal').classList.remove('hidden');setStatus('adminStatus','');};
-$('publish').onclick=async()=>{if(!isAdmin()){setStatus('adminStatus','Нет прав администратора.');return;}const name=$('projectName').value.trim(),description=$('projectDesc').value.trim(),file=$('projectFile').files[0],code=$('projectCode').value.trim();if(!name){setStatus('adminStatus','Укажи название проекта.');return;}if(!file&&!code){setStatus('adminStatus','Вставь HTML-код или выбери HTML-файл.');return;}if(file&&!/\.html?$/i.test(file.name)){setStatus('adminStatus','Поддерживаются только .html и .htm.');return;}const html=file?await file.text():code;if(!/<html[\s>]/i.test(html)&&!/^<!doctype html/i.test(html)){setStatus('adminStatus','Похоже, это не полный HTML-документ. Добавь разметку HTML.');return;}if(new Blob([html]).size>2*1024*1024){setStatus('adminStatus','Размер HTML не должен превышать 2 МБ.');return;}$('publish').disabled=true;setStatus('adminStatus','Публикуем проект…');try{const slug=name.toLowerCase().normalize('NFKD').replace(/[^a-z0-9а-яё]+/gi,'-').replace(/^-|-$/g,'').slice(0,48)||'project';const path=`${Date.now()}-${slug}.html`;const {error:uploadError}=await supabaseClient.storage.from('projects').upload(path,new Blob([html],{type:'text/html;charset=utf-8'}),{contentType:'text/html; charset=utf-8',upsert:false});if(uploadError)throw uploadError;const {data:urlData}=supabaseClient.storage.from('projects').getPublicUrl(path);const {error:insertError}=await supabaseClient.from('projects').insert({name,description,storage_path:path,public_url:urlData.publicUrl,created_by:currentUser.id});if(insertError){await supabaseClient.storage.from('projects').remove([path]);throw insertError;}$('projectName').value='';$('projectDesc').value='';$('projectCode').value='';$('projectFile').value='';setStatus('adminStatus','Готово! Проект опубликован.');await loadProjects();}catch(e){console.error(e);setStatus('adminStatus','Ошибка публикации: '+e.message);}finally{$('publish').disabled=false;}};
-if(supabaseClient){supabaseClient.auth.onAuthStateChange((_event,session)=>{currentUser=session?.user||null;updateAccountUI();});}
+$('publish').onclick=async()=>{
+  if(!isAdmin()){setStatus('adminStatus','Нет прав администратора.');return;}
+  const name=$('projectName').value.trim(),description=$('projectDesc').value.trim(),file=$('projectFile').files[0],code=$('projectCode').value.trim();
+  if(!name){setStatus('adminStatus','Укажи название проекта.');return;}
+  if(!file&&!code){setStatus('adminStatus','Вставь HTML-код или выбери HTML-файл.');return;}
+  if(file&&!/\.html?$/i.test(file.name)){setStatus('adminStatus','Поддерживаются только .html и .htm.');return;}
+  const html=file?await file.text():code;
+  if(!/<html[\s>]/i.test(html)&&!/^<!doctype html/i.test(html)){setStatus('adminStatus','Похоже, это не полный HTML-документ. Добавь разметку HTML.');return;}
+  if(new Blob([html]).size>2*1024*1024){setStatus('adminStatus','Размер HTML не должен превышать 2 МБ.');return;}
+  $('publish').disabled=true;setStatus('adminStatus','Публикуем проект…');
+  const path=`projects/${Date.now()}-${Math.random().toString(36).slice(2,8)}.html`;
+  try{
+    const fileRef=storage.ref().child(path);
+    await fileRef.put(new Blob([html],{type:'text/html;charset=utf-8'}),{contentType:'text/html; charset=utf-8'});
+    const publicUrl=await fileRef.getDownloadURL();
+    await db.collection('projects').add({name,description,storage_path:path,public_url:publicUrl,createdBy:currentUser.uid,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    $('projectName').value='';$('projectDesc').value='';$('projectCode').value='';$('projectFile').value='';
+    setStatus('adminStatus','Готово! Проект опубликован.');await loadProjects();
+  }catch(e){console.error(e);setStatus('adminStatus','Ошибка публикации: '+e.message);}
+  finally{$('publish').disabled=false;}
+};
+if(firebaseAuth){
+  firebaseAuth.onAuthStateChanged(user=>{currentUser=user;updateAccountUI();});
+}
 (async()=>{await refreshSession();await loadProjects();})();
-
 
 // --- CodeVault Studio: live HTML preview, Capacitor project export, multi-provider AI ---
 const compilerCode = $('compilerCode');
@@ -54,14 +99,13 @@ let chatHistory=[];
 function addChatMessage(role,text){const wrap=$('chatMessages');const welcome=wrap.querySelector('.welcome-message');if(welcome)welcome.remove();const el=document.createElement('div');el.className='chat-message '+role;const label=document.createElement('span');label.className='role';label.textContent=role==='user'?'YOU':'CODEVAULT AI';el.appendChild(label);el.appendChild(document.createTextNode(text));wrap.appendChild(el);wrap.scrollTop=wrap.scrollHeight;return el;}
 async function sendChat(text){
   const msg=text.trim();if(!msg)return;
-  if(!supabaseClient){addChatMessage('assistant','Сначала настрой Supabase в config.js и опубликуй сайт.');return;}
-  const {data:{session}}=await supabaseClient.auth.getSession();
-  if(!session?.access_token){addChatMessage('assistant','Чтобы пользоваться AI Studio, сначала войди в аккаунт.');$('authModal').classList.remove('hidden');return;}
+  if(!firebaseAuth || !currentUser){addChatMessage('assistant','Чтобы пользоваться AI Studio, сначала войди в аккаунт.');$('authModal').classList.remove('hidden');return;}
+  const idToken=await currentUser.getIdToken();
   addChatMessage('user',msg);chatHistory.push({role:'user',content:msg});
   const pending=addChatMessage('assistant','Думаю…');$('chatStatus').textContent='Запрос отправлен';
   const provider=$('aiProvider').value;
   try{
-    const response=await fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},body:JSON.stringify({provider,messages:chatHistory.slice(-12)})});
+    const response=await fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+idToken},body:JSON.stringify({provider,messages:chatHistory.slice(-12)})});
     const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||`Ошибка API (${response.status})`);
     pending.lastChild.textContent=data.reply||'Провайдер вернул пустой ответ.';chatHistory.push({role:'assistant',content:data.reply||''});
   }catch(e){pending.lastChild.textContent='Не удалось получить ответ: '+e.message;chatHistory.pop();}

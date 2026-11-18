@@ -1,19 +1,26 @@
-const MAX_BODY = 60_000;
+const MAX_BODY = 60000;
 const allowed = new Set(['openai','anthropic','yandex']);
 function json(res,status,body){res.status(status).setHeader('Content-Type','application/json; charset=utf-8').send(JSON.stringify(body));}
 function outputText(data){if(typeof data.output_text==='string')return data.output_text;return (data.output||[]).flatMap(x=>x.content||[]).filter(x=>x.type==='output_text'||x.type==='text').map(x=>x.text||'').join('\n');}
-async function verifyUser(req){
-  const auth=req.headers.authorization||'';if(!auth.startsWith('Bearer '))return null;
-  const url=process.env.SUPABASE_URL;const key=process.env.SUPABASE_ANON_KEY;
-  if(!url||!key)throw new Error('На сервере не настроены SUPABASE_URL и SUPABASE_ANON_KEY.');
-  const r=await fetch(url.replace(/\/$/,'')+'/auth/v1/user',{headers:{apikey:key,Authorization:auth}});
-  if(!r.ok)return null;return await r.json();
+async function verifyFirebaseUser(idToken){
+  const apiKey=process.env.FIREBASE_API_KEY;
+  if(!apiKey)throw new Error('На сервере не настроен FIREBASE_API_KEY.');
+  const r=await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(apiKey)}`,{
+    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idToken})
+  });
+  if(!r.ok)return null;
+  const data=await r.json();
+  return data.users?.[0]||null;
 }
 module.exports=async function handler(req,res){
   if(req.method!=='POST'){res.setHeader('Allow','POST');return json(res,405,{error:'Используй POST.'});}
   try{
-    const user=await verifyUser(req);if(!user?.id)return json(res,401,{error:'Войди в CodeVault, чтобы пользоваться AI.'});
-    const raw=typeof req.body==='string'?req.body:JSON.stringify(req.body||{});if(raw.length>MAX_BODY)return json(res,413,{error:'Слишком большой запрос.'});
+    const auth=req.headers.authorization||'';
+    if(!auth.startsWith('Bearer '))return json(res,401,{error:'Войди в CodeVault, чтобы пользоваться AI.'});
+    const user=await verifyFirebaseUser(auth.slice(7));
+    if(!user?.localId)return json(res,401,{error:'Сессия Firebase недействительна. Войди снова.'});
+    const raw=typeof req.body==='string'?req.body:JSON.stringify(req.body||{});
+    if(raw.length>MAX_BODY)return json(res,413,{error:'Слишком большой запрос.'});
     const body=typeof req.body==='string'?JSON.parse(req.body):req.body||{};
     const provider=String(body.provider||'');const messages=Array.isArray(body.messages)?body.messages:[];
     if(!allowed.has(provider))return json(res,400,{error:'Неизвестный AI-провайдер.'});
@@ -21,7 +28,7 @@ module.exports=async function handler(req,res){
     if(!clean.length)return json(res,400,{error:'Напиши сообщение.'});
     let reply='';
     if(provider==='openai'){
-      if(!process.env.OPENAI_API_KEY)return json(res,503,{error:'OpenAI не подключён: добавь OPENAI_API_KEY в Vercel → Settings → Environment Variables.'});
+      if(!process.env.OPENAI_API_KEY)return json(res,503,{error:'OpenAI не подключён: добавь OPENAI_API_KEY в Vercel.'});
       const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:'Bearer '+process.env.OPENAI_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({model:process.env.OPENAI_MODEL||'gpt-4.1-mini',input:clean})});
       const d=await r.json();if(!r.ok)return json(res,r.status,{error:d.error?.message||'Ошибка OpenAI API.'});reply=outputText(d);
     } else if(provider==='anthropic'){
